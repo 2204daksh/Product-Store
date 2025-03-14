@@ -1,0 +1,95 @@
+import { create } from "zustand";
+
+export const useProductStore = create((set) => ({
+
+    products: [],
+
+    setProducts: (products) => set({products}),
+
+    // CREATING A PRODUCT
+    createProduct : async (newProduct) => {
+        if(!newProduct.name || !newProduct.price || !newProduct.image){
+            return {
+                succees : false,
+                message : "Please fill all the fields"
+            }
+        }
+
+        const res = await fetch("/api/products" , {
+            method: "POST",
+            headers: {
+                "Content-Type" : "application/json"
+            },
+            body: JSON.stringify(newProduct)
+        })
+
+        const data = await res.json();
+        set((state) => ({products:[...state.products, data.data]}))
+
+        return {
+            success:true,
+            message:"Product created Successfully"
+        }
+    },
+
+    // FETCHING ALL PRODUCTS
+    fetchProduct : async() => {
+        const res = await fetch("api/products");
+        const data = await res.json();
+
+        set({products : data.data});
+    },
+
+    // DELETING A PRODUCT
+    deleteProduct : async(pid) => {
+        const res = await fetch(`api/products/${pid}`, {
+            method: "DELETE",
+        })
+
+        const data = await res.json();
+
+        if(!data.success){
+            return {
+                success:false,
+                message:data.message
+            }
+        }
+
+        // Updates ui after deleting
+        set((state) => ({products: state.products.filter((product) => product._id !== pid)}));
+
+        return {
+            success:true,
+            message:"Product Deleted"
+        }
+    },
+
+    updateProduct: async (pid, updatedProduct) => {
+        const res = await fetch(`api/products/${pid}`, {
+            method: "PUT",
+            headers: {
+                "Content-Type" : "application/json"
+            },
+            body: JSON.stringify(updatedProduct)
+        })
+
+        const data = await res.json();
+
+        if(!data.success){
+            return {
+                success:false,
+                message:data.message
+            }
+        }
+
+        // Update UI after updating
+        set((state) => ({
+            products: state.products.map(product => product._id===pid ? data.data : product)
+        }))
+
+        return {
+            success:true,
+            message:"Product Updated"
+        }
+    }
+}))
